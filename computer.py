@@ -24,38 +24,23 @@ from threading import Lock
 import argparse
 
 from audio_handler import AudioHandler
+from control import OperatorClient, States
 
 
-ip = "radio-berry"
-port = 27700
-
-sTX = b"T"
-sRX = b"R"
-sNA = b"N"
-
-state = sNA
+state = States.no_audio
 state_lock = Lock()
 
 ah = None
-
-def open_conn_and_send(tx_rx_none):
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((ip, port))     
-    client.send(tx_rx_none)
-    response = client.recv(4096)
-    client.shutdown(socket.SHUT_RDWR)
-    client.close()
-    #time.sleep(1)
-#enddef
+op_cl = None
 
 def transmit():
     global state
     with state_lock:
-        if state == sRX:
-            state = sTX
+        if state == States.rx:
+            state = States.tx
             ah.send_audio()
-            open_conn_and_send(sTX)
-        elif state == sNA:
+            op_cl.transmit()
+        elif state == States.no_audio:
             print("transmitting not available, disable standby first --> 'R'")
         else:
             print("already transmitting")
@@ -66,10 +51,10 @@ def transmit():
 def receive(s=False):
     global state
     with state_lock:
-        if state == sTX or (state == sNA and s):
-            state = sRX
+        if state == States.tx or (state == States.no_audio and s):
+            state = States.rx
             ah.receive_audio()
-            open_conn_and_send(sRX)          
+            op_cl.receive()         
         else:
             print("already receiving")
         #endif
@@ -79,13 +64,13 @@ def receive(s=False):
 def standby(keep_rx=False):
     global state
     with state_lock:
-        state = sNA
+        state = States.no_audio
         if not keep_rx:
             ah.stop_all_audio()
-            open_conn_and_send(sNA)
+            op_cl.standby_no_audio()
         else:
             ah.receive_audio()
-            open_conn_and_send(sRX)
+            op_cl.receive()
         #endif
     #endwith
 #enddef
@@ -125,14 +110,17 @@ def print_help():
 
 def main():
 
-    global ah, ip
+    global ah, op_cl
     br = 0
 
+    ip = "radio-berry"
+    port = 27700
+
     # TODO: improve this (check input types + clean up)
-    parser = argparse.ArgumentParser(description="Radio side of remoteradioptt")
-    parser.add_argument('-v','--verbose', type=int, dest='verbose')
-    parser.add_argument('-i','--ip-address', dest='ip_address')
-    parser.add_argument('-b', '--bitrate', dest='trx_bitrate')
+    parser = argparse.ArgumentParser(description="Operator side of remoteradioptt")
+    parser.add_argument('-v','--verbose', type=int, dest='verbose', help="verbostiy level")
+    parser.add_argument('-i','--ip-address', dest='ip_address', help="IP address / Hostname of computer conneted to radio")
+    parser.add_argument('-b', '--bitrate', dest='trx_bitrate', help="bitrate passed to trx (for rx ad tx audio)")
 
     args = parser.parse_args()
 
@@ -165,6 +153,7 @@ def main():
     listener.start()
 
     ah = AudioHandler(ip, br)
+    op_cl = OperatorClient(ip, port)
 
     running = True
     while running:
@@ -183,17 +172,19 @@ def main():
             elif i in ["h", "help", "H"]:
                 print_help()
             elif i[0] in ["d" ,"D"]:
-                open_conn_and_send(str.encode(i))
+                op_cl.dial_dtmf(i)
             else:
                 print("unknown command")
                 print_help()
             #endif
-        except:
+        except (KeyboardInterrupt, EOFError):
             print("Exiting")
             running = False
+        #endtry
     #endwhile
 
     standby()
+#enddef
 
 
 if __name__ == "__main__":

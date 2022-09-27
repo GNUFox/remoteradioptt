@@ -74,6 +74,8 @@ class AudioHandler():
     #enddef
 
     def __del__(self):
-        pass
+        self.rx_process.terminate()
+        self.tx_process.terminate()
+    #enddef
 
     

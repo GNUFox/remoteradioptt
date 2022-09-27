@@ -36,15 +36,18 @@ class DTMF:
         self.ratio = ratio
 
         self.silence = numpy.zeros(int(self.length/2)*self.rate).astype(numpy.float32).tobytes()
+    #enddef
 
 
     def dial(self, number):
         self.play_dtmf_tone(number)
+    #enddef
 
     def sine_wave(self, frequency, length, rate):
         length = int(length * rate)
         factor = float(frequency) * (math.pi * 2) / rate
         return numpy.sin(numpy.arange(length) * factor)
+    #enddef
 
     def sine_sine_wave(self, f1, f2, length, rate):
         s1=self.sine_wave(f1,length,rate)
@@ -52,6 +55,7 @@ class DTMF:
         ss=s1+s2
         sa=numpy.divide(ss, 2.0)
         return sa
+    #enddef
 
     def play_dtmf_tone(self, digits):
         dtmf_freqs = {'1': (1209,697), '2': (1336, 697), '3': (1477, 697), 'A': (1633, 697),
@@ -82,4 +86,6 @@ class DTMF:
     def __del__(self):
         self.stream.close()
         self.p.terminate()
+    #enddef
+#endclass
 

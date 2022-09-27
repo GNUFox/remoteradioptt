@@ -46,17 +46,21 @@ process_lock = threading.Lock()
 
 def set_up_server(ip, port):
     global server
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind((ip, port))
-    server.listen(5)
+    try:
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((ip, port))
+        server.listen(5)
+    except:
+        print("Error while starting the server")
+    #endtry
 #enddef
 
 def handle_client(client_socket):
     global running
     # show the data from the client
     request = client_socket.recv(1024)
-    #print (f"[*] Received: {request.decode('utf-8') }")
+
     # Return a packet
     client_socket.send("ACK!".encode())
     client_socket.close()
@@ -109,9 +113,9 @@ def main():
 
     # TODO: improve this (check input types + clean up)
     parser = argparse.ArgumentParser(description="Radio side of remoteradioptt")
-    parser.add_argument('-v','--verbose', type=int, dest='verbose')
-    parser.add_argument('-i','--ip-address', dest='ip_address')
-    parser.add_argument('-b', '--bitrate', dest='trx_bitrate')
+    parser.add_argument('-v','--verbose', type=int, dest='verbose', help="verbostiy level")
+    parser.add_argument('-i','--ip-address', dest='ip_address', help="IP address / Hostname of the operator pc")
+    parser.add_argument('-b', '--bitrate', dest='trx_bitrate', help="bitrate passed to trx (for rx ad tx audio)")
 
     args = parser.parse_args()
 
@@ -136,9 +140,11 @@ def main():
 
     print("Hello")
 
+    # init GPIO
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(ptt_pin, GPIO.OUT)
     GPIO.output(ptt_pin, 0)
+
     set_up_server("0.0.0.0", port)
     ah = AudioHandler(ip, br)
     dialer = DTMF()
@@ -151,8 +157,8 @@ def main():
             client_handler = threading.Thread(target = handle_client, args=(client,))
             client_handler.start()
             client_handler.join()
-    except:
-        print("something happened")
+    except KeyboardInterrupt:
+        print("Keyboard interrupt, shutting down")
     #endif
 
     server.shutdown(socket.SHUT_RDWR)

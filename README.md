@@ -32,14 +32,21 @@ cp rx tx ~/bin
 # if not, add "~/bin" to your $PATH
 ```
 
-### python dependencies (on operator PC)
+### Python dependencies (on operator PC)
 ```
 pip3 install pynput
 ```
 
-### python dependencies (on remote PC)
+### Python dependencies (on remote PC)
 ```
 pip3 install RPi.GPIO pyaudio numpy
+```
+
+### Additional dependencies (on remote PC)
+
+When trying to set up the software on a raspberry-pi (light image) the follwing additional packages have to be installed:
+```
+apt install libportaudio2
 ```
 
 Now you should be able to run `radio.py` on the raspbery and `computer.py` on the operators PC.
