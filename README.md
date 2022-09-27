@@ -4,7 +4,10 @@ Minimalistic program for remotely controlling PTT of a (Ham-)radio transceiver a
 
 This is yet another remote PTT software.  
 This one works without mumble or any other server but requires connection between the remote computer (at radio) and the operators computer via a private network.  
-As this is intended for usage on a local area network there is no authentication or encryption used.  
+This software is intended for usage on a local area network, so there is no authentication or encryption.  
+This program only controls PTT and passes audio between the radio and the remote computer.
+Audio streaming is done by [trx](http://www.pogo.org.uk/~mark/trx/).  
+As there are almost no Ham radios for VHF/UHF FM available that also have a CAT port the radio is controlled by flashing settings onto it via [CHIRP](https://chirp.danplanet.com/projects/chirp/wiki/Home).
 
 The goal was to keep both ends as simple as possible.
 
@@ -57,7 +60,7 @@ Runs on a raspberry pi (zero) and handles PTT as well as audio streaming through
 A GPIO pin is used to control the PTT key, audio in/out is done via a standard USB soundcard.  
 PTT commands are received via TCP (radio.py runs a server).
 
-Due to speed limitations the processes for `rx` and `tx` have to started and stopped accordingly (see `audio_handler.py`)
+Due to speed limitations on a Gen 1 Raspberry pi Zero, only one processe for `rx` and `tx` can run at the same time (see `audio_handler.py`).
 
 
 ## computer.py
@@ -85,11 +88,11 @@ help:   print help
 
 ## TODO
 - [ ] Error-handling in radio.py
-- [ ] Command-Line Arguments for Host/Port in raido.py and computer.py
+- [x] Command-Line Arguments for Host/Port in raido.py and computer.py
 - [x] Locking mechanism in radio.py
 - [ ] Find another soultion that doesn't use pulseadio because some users might not want to use that on a raspberrypi
 - [ ] better exception handling
 - [ ] Radio Power on / off
 - [ ] Interlock to prevent radio access while other applications e.g. direwolf are in control
-- [ ] find reason for latency / reason why audio is not audible for the first few seconds when switching to receive
-- [ ] Move argument handling to separate file class (as it is the same for )
+- [ ] find reason for latency / reason why audio is not audible for the first few seconds when switching to receive -> probably due to trx buffering/startup (Popen)
+- [ ] Move argument handling to separate file class (as it is the same for both radio/computer)
